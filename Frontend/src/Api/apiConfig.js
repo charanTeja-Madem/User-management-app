@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:4000/user-api"
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/user-api"
 
 export const API_ENDPOINTS = {
   getAllUsers: `${API_BASE_URL}/users`,

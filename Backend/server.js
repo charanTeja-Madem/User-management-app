@@ -5,26 +5,44 @@ import userApp from './APIs/UserApi.js'
 import cors from 'cors'
 config()
 const app=exp()
+
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',')
+  : ['http://localhost:5173']
+
 app.use(cors({
-    origin:"http://localhost:5173"
+    origin: allowedOrigins
 }))
-const port=process.env.port || 4000
-const connectDB= async ()=>{
-    try{
-        await mongoose.connect(process.env.db_url)
-        console.log("DB connected")
-        app.listen(port,()=>{
-            console.log("server started on port",port)
-        })
-    }
-    catch(e){
-        console.log("failed to connect db:",e.message)
-        process.exit(1)
-    }    
-}
-connectDB()
+
 app.use(exp.json())
 app.use('/user-api',userApp)
+
+// DB connection with caching for serverless
+let isConnected = false
+const connectDB = async () => {
+    if (isConnected) return
+    try {
+        await mongoose.connect(process.env.db_url)
+        isConnected = true
+        console.log('DB connected')
+    } catch (e) {
+        console.log('failed to connect db:', e.message)
+        throw e
+    }
+}
+
+// For local development
+if (process.env.NODE_ENV !== 'production') {
+    const port = process.env.port || 4000
+    connectDB().then(() => {
+        app.listen(port, () => {
+            console.log('server started on port', port)
+        })
+    })
+}
+
+// For Vercel serverless
+export { app, connectDB }
 
 
 //error handling middleware
